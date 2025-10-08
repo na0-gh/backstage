@@ -1,0 +1,118 @@
+name: TikTok Creator Scraper
+
+on:
+  # 平日朝10:00（JST）に実行 = UTC 1:00
+  schedule:
+    - cron: '0 1 * * 1-5'  # 月曜日から金曜日の午前1時（UTC）
+  
+  # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'デバッグモードを有効にする'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  # タイムゾーンを日本に設定
+  TZ: Asia/Tokyo
+
+jobs:
+  scrape-tiktok-creators:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: チェックアウト
+      uses: actions/checkout@v4
+      
+    - name: Node.js 18のセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 依存関係のインストール
+      run: npm ci
+      
+    - name: Google Chromeのインストール
+      run: |
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        google-chrome-stable --version
+        
+    - name: 日本語フォントのインストール
+      run: |
+        sudo apt-get install -y fonts-noto-cjk
+        
+    - name: 出力ディレクトリの作成
+      run: mkdir -p output
+      
+    - name: 環境変数の設定確認
+      run: |
+        echo "実行時刻（JST）: $(date)"
+        echo "TikTokメール設定: ${{ secrets.TIKTOK_EMAIL != '' && '設定済み' || '未設定' }}"
+        echo "TikTokパスワード設定: ${{ secrets.TIKTOK_PASSWORD != '' && '設定済み' || '未設定' }}"
+        echo "スプレッドシートID設定: ${{ secrets.SPREADSHEET_ID != '' && '設定済み' || '未設定' }}"
+        echo "Google認証情報設定: ${{ secrets.GOOGLE_CREDENTIALS != '' && '設定済み' || '未設定' }}"
+        
+    - name: TikTokクリエイター情報のスクレイピング実行
+      env:
+        TIKTOK_EMAIL: ${{ secrets.TIKTOK_EMAIL }}
+        TIKTOK_PASSWORD: ${{ secrets.TIKTOK_PASSWORD }}
+        SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        NODE_ENV: production
+        PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+        PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+        DISABLE_GOOGLE_SHEETS: ${{ secrets.DISABLE_GOOGLE_SHEETS || 'false' }}
+      run: |
+        echo "スクレイピングを開始します..."
+        timeout 30m npm start || {
+          echo "スクレイピングが30分でタイムアウトしました"
+          exit 1
+        }
+        
+    - name: 実行結果の確認
+      run: |
+        echo "=== 出力ファイル一覧 ==="
+        ls -la output/ || echo "outputディレクトリが見つかりません"
+        
+        if [ -n "$(ls -A output/ 2>/dev/null)" ]; then
+          echo "=== 最新ファイルの内容（最初の5件） ==="
+          latest_file=$(ls -t output/creators_*.json 2>/dev/null | head -n1)
+          if [ -n "$latest_file" ]; then
+            echo "ファイル: $latest_file"
+            echo "データ件数: $(jq '. | length' "$latest_file" 2>/dev/null || echo '不明')"
+            jq '.[0:5]' "$latest_file" 2>/dev/null || echo "JSONの解析に失敗"
+          else
+            echo "JSONファイルが見つかりません"
+          fi
+        else
+          echo "出力ファイルが見つかりません"
+        fi
+        
+    - name: 実行結果をアーティファクトとして保存
+      uses: actions/upload-artifact@v4
+      if: always()  # エラーが発生しても実行
+      with:
+        name: tiktok-scraper-results-${{ github.run_number }}
+        path: |
+          output/
+          *.log
+        retention-days: 30
+        
+    - name: 実行完了通知
+      if: success()
+      run: |
+        echo "✅ TikTokクリエイター情報のスクレイピングが正常に完了しました"
+        echo "実行時刻: $(date)"
+        
+    - name: エラー通知
+      if: failure()
+      run: |
+        echo "❌ TikTokクリエイター情報のスクレイピングでエラーが発生しました"
+        echo "実行時刻: $(date)"
+        echo "詳細はログを確認してください"

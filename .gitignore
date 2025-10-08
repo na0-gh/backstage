@@ -1,0 +1,49 @@
+# 機密情報（絶対にコミットしない）
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.docker
+*.env
+
+# Node.js関連
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Google認証情報
+credentials.json
+service-account-key.json
+aidea-*.json
+
+# 実行結果ファイル
+creators_*.json
+output/
+*.log
+
+# OS関連
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# エディター関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 一時ファイル
+*.tmp
+*.temp
+
+# その他
+.coverage
+.cache 

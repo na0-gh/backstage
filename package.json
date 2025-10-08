@@ -1,0 +1,22 @@
+{
+    "name": "tiktok-scraper",
+    "version": "1.0.0",
+    "main": "index.js",
+      "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_EXECUTABLE_PATH=$(which google-chrome-stable) node index.js",
+    "dev": "node index.js",
+    "setup": "bash setup-codespaces.sh",
+    "install-chrome": "bash install-chrome.sh"
+  },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+      "dotenv": "^16.4.7",
+      "googleapis": "^146.0.0",
+      "puppeteer": "^24.4.0"
+    }
+  }
+  

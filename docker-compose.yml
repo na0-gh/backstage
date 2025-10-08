@@ -1,0 +1,45 @@
+# backstage-update-github
+
+version: '3.8'
+
+services:
+  tiktok-scraper:
+    build: .
+    container_name: tiktok-scraper
+    environment:
+      # TikTokアカウント情報（必須）
+      - TIKTOK_EMAIL=${TIKTOK_EMAIL}
+      - TIKTOK_PASSWORD=${TIKTOK_PASSWORD}
+      
+      # Google Sheets設定（オプション）
+      - SPREADSHEET_ID=${SPREADSHEET_ID}
+      - GOOGLE_CREDENTIALS=${GOOGLE_CREDENTIALS}
+      
+      # その他の設定
+      - NODE_ENV=production
+      - DISABLE_GOOGLE_SHEETS=${DISABLE_GOOGLE_SHEETS:-false}
+      
+      # Puppeteer設定
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+    
+    volumes:
+      # 実行結果のJSONファイルをホストに保存
+      - ./output:/app/output
+    
+    # セキュリティ設定
+    security_opt:
+      - seccomp:unconfined
+    
+    # メモリ制限（必要に応じて調整）
+    mem_limit: 2g
+    
+    # 自動再起動を無効化（一回限りの実行のため）
+    restart: "no"
+    
+    # ログ設定
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
