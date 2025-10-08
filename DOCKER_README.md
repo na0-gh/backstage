@@ -9,17 +9,15 @@
 
 ### 1. 環境変数の設定
 
-`.env` ファイルを作成して、必要な環境変数を設定してください：
+**重要**: このシステムはGitHub Secretsを前提としています。
+ローカルでの実行には、環境変数を直接設定する必要があります：
 
 ```bash
-# .envファイルをコピー
-cp env.example .env
-
-# .envファイルを編集
-# TIKTOK_EMAIL=your-email@example.com
-# TIKTOK_PASSWORD=your-password
-# SPREADSHEET_ID=your-spreadsheet-id
-# GOOGLE_CREDENTIALS={"type":"service_account",...}
+# 環境変数を設定（PowerShellの場合）
+$env:TIKTOK_EMAIL="your-email@example.com"
+$env:TIKTOK_PASSWORD="your-password"
+$env:SPREADSHEET_ID="your-spreadsheet-id"
+$env:GOOGLE_CREDENTIALS='{"type":"service_account",...}'
 ```
 
 ### 2. Dockerイメージのビルドと実行

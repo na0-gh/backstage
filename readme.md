@@ -1,86 +1,102 @@
-# TikTok Scraper - Codespaces実行ガイド
+# 🤖 TikTokクリエイター自動スクレイピングシステム
 
-## 🚀 Codespacesでの実行方法
+TikTok Live Backstageからクリエイター情報を自動で取得し、Google Sheetsに同期するシステムです。
 
-### 1. **Codespacesを開く**
-1. GitHubリポジトリページで **Code** ボタンをクリック
-2. **Codespaces** タブを選択
-3. **Create codespace on main** をクリック
+## ✨ 主要機能
 
-### 2. **自動セットアップ（推奨）**
+- **🕙 自動実行**: 平日朝10:00（JST）にGitHub Actionsで自動実行
+- **📊 データ取得**: 517人のクリエイター情報を26ページから取得
+- **🇯🇵 日本語化**: ステータスを完全日本語化（例：Managed by agency → エージェンシーによって管理中）
+- **⏰ 時間情報**: 時間付きステータス対応（例：承認待ち（招待期限: 6d 6h 58m））
+- **📈 Google Sheets連携**: 取得データを自動でスプレッドシートに同期
+- **🐳 Docker対応**: ローカルでのテスト実行環境完備
 
-#### 🔐 **前提条件**: GitHubでCodespaces Secretsを設定
-1. リポジトリの **Settings** > **Codespaces** > **Repository secrets**
-2. 以下の環境変数を追加：
-   - `TIKTOK_EMAIL`: TikTokアカウントのメールアドレス ✅
-   - `TIKTOK_PASSWORD`: TikTokアカウントのパスワード ✅
-   - `SPREADSHEET_ID`: Google SheetsのID（既に設定済み）✅
-   - `GOOGLE_CREDENTIALS`: Google認証情報（既に設定済み）✅
+## 🚀 実行方法
 
-#### ✨ **実行手順**
-ターミナルで以下のコマンドを実行：
+### 方法1: GitHub Actions（推奨）
+
+**平日朝10:00に自動実行**されます。手動実行も可能です。
+
+1. **Actions**タブを開く
+2. **TikTok Creator Scraper**を選択
+3. **Run workflow**をクリック
+
+### 方法2: ローカルDocker実行
 
 ```bash
-# プロジェクトフォルダに移動
-cd backstage-update
+# リポジトリをクローン
+git clone https://github.com/na0-gh/backstage.git
+cd backstage
 
-# 自動セットアップを実行（Codespaces Secretsを自動検出）
-chmod +x setup-codespaces.sh
-npm run setup
-
-# スクレイピング実行
-npm start
+# Docker実行（GitHub Secretsが設定されている場合のみ動作）
+docker-compose up --build
 ```
 
-### 3. **手動セットアップ（トラブル時）**
-```bash
-# 依存関係をインストール
-npm install
+詳細は [`DOCKER_README.md`](DOCKER_README.md) を参照してください。
 
-# Google Chromeをインストール
-chmod +x install-chrome.sh
-npm run install-chrome
+## ⚙️ 設定
 
-# 環境変数を設定
-cp env.example .env
+### GitHub Secrets（必須）
 
-# スクレイピング実行
-npm start
+リポジトリの **Settings** > **Secrets and variables** > **Actions** で設定：
+
+- `TIKTOK_EMAIL`: TikTokアカウントのメールアドレス
+- `TIKTOK_PASSWORD`: TikTokアカウントのパスワード  
+- `SPREADSHEET_ID`: Google SheetsのID
+- `GOOGLE_CREDENTIALS`: Google認証情報のJSON
+
+詳細は [`GITHUB_ACTIONS_README.md`](GITHUB_ACTIONS_README.md) を参照してください。
+
+## 📊 実行結果
+
+### 取得データ例
+```json
+{
+  "name": "クリエイター名",
+  "id": "@creator_id",
+  "status": "エージェンシーによって管理中",
+  "date": "2024/01/15 10:30:45"
+}
 ```
 
-### 3. **結果確認**
-- 実行結果は `creators_YYYY-MM-DDTHH-mm-ss-sssZ.json` ファイルに保存されます
-- Google Sheetsにも自動で同期されます
+### 出力先
+- **JSONファイル**: `output/creators_YYYY-MM-DDTHH-mm-ss-sssZ.json`
+- **Google Sheets**: 自動同期
+- **GitHub Actions**: アーティファクトとして30日間保存
 
-## ⚙️ 環境変数について
+## 🔧 技術仕様
 
-環境変数は**Codespaces Secrets**で自動設定されています。
-手動設定は不要です。
+- **言語**: Node.js 18
+- **ブラウザ自動化**: Puppeteer
+- **コンテナ**: Docker + Docker Compose
+- **CI/CD**: GitHub Actions
+- **スケジュール**: 平日朝10:00（JST）= UTC 1:00
+- **データ同期**: Google Sheets API
 
-## 🔧 トラブルシューティング
+## 📝 ログ出力例
 
-### エラーが発生した場合
-1. **依存関係の再インストール**：
-   ```bash
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
+```
+✅ 合計 26 ページを検出しました
+✅ 1ページ目: 20人のクリエイター情報を取得
+✅ 2ページ目: 20人のクリエイター情報を取得
+...
+✅ 合計 517 人のクリエイターを取得しました
+✅ データの正規化処理が完了しました
+✅ 結果を ./output/creators_2024-01-15T01-30-45-123Z.json に保存しました
+✅ Google Sheetsへの同期も完了しました
+```
 
-2. **Chrome関連エラー**：
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y chromium-browser
-   ```
+## 🔒 セキュリティ
 
-3. **環境変数エラー**：
-   リポジトリオーナーにCodespaces Secretsの設定を確認してもらってください。
+- 認証情報は全てGitHub Secretsで管理
+- 機密情報はリポジトリに含まれません
+- 非rootユーザーでのDocker実行
 
-## 📝 注意事項
+## 📚 ドキュメント
 
-- **headless: true**設定でブラウザはバックグラウンド実行されます
-- 実行には数分かかる場合があります
-- ネットワーク環境により実行時間が変わります
+- [GitHub Actions設定ガイド](GITHUB_ACTIONS_README.md)
+- [Docker実行ガイド](DOCKER_README.md)
 
 ## 🆘 サポート
 
-問題が発生した場合は、リポジトリのIssuesで報告してください。 
+問題が発生した場合は、リポジトリのIssuesで報告してください。
